@@ -1,3 +1,4 @@
+const { executeQuery } = require("./dbConnection");
 const { insertQuery } = require("./dbHelper");
 const { sendJsonResp } = require("./utils");
 
@@ -6,7 +7,6 @@ const addNewClient = async (req, res) => {
   const result = await insertQuery(body, "Clients", true)
   if (!result.isError && result.affectedRows) {
     const data = {
-      msg: `SUCCESS`,
       clientAdded: result.affectedRows
     }
     sendJsonResp(res, data, 200);
@@ -18,7 +18,26 @@ const addNewClient = async (req, res) => {
     sendJsonResp(res, data, 400);
   }
 }
+const getAllClient = async (req, res) => {
+  try {
+    const sql = "select * from Clients";
+    let result = await executeQuery(sql);
+    const data = {
+      list: result
+    }
+    sendJsonResp(res, data, 200);
+    
+  } catch (e) {
+    const data = {
+      msg : e.sqlMessage || e.message,
+      code : e.code || "SOMETHIN WENT WRONG"
+    }
+    sendJsonResp(res, data, 400);
+    console.error("ERROR IN GET ALL CLIENT", e)
+  }
+}
 
 module.exports = {
-  addNewClient
+  addNewClient,
+  getAllClient
 }

@@ -1,5 +1,6 @@
-const { addNewClient } = require("./cleintHelpers")
+const { addNewClient, getAllClient } = require("./cleintHelpers")
 
 module.exports = {
-  "/addnewclient": addNewClient
+  "/addnewclient": addNewClient,
+  "/getallclient": getAllClient
 }

@@ -11,6 +11,8 @@ function sendJsonResp(res, data = {}, status = 200, header = {}) {
     "Access-Control-Allow-Headers": "*",
     ...header,
   };
+  if (status >= 200 && status < 300) data.status = "SUCCESS";
+  else if(status >= 400) data.status = "FAILURE";
   res.writeHead(status, responseHeader);
   res.write(JSON.stringify(data));
   res.end();
