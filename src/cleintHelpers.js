@@ -36,8 +36,29 @@ const getAllClient = async (req, res) => {
     console.error("ERROR IN GET ALL CLIENT", e)
   }
 }
+const getClient = async (req, res) => {
+  const { query } = req
+  try {
+    const sql = `select * from Clients where id=${query.id}`;
+    let result = await executeQuery(sql);
+    if(!result.length) throw({code:"INVALID ID", message:"wrong client id"})
+    const data = {
+      data: result[0]
+    }
+    sendJsonResp(res, data, 200);
+    
+  } catch (e) {
+    const data = {
+      msg : e.sqlMessage || e.message,
+      code : e.code || "SOMETHIN WENT WRONG"
+    }
+    sendJsonResp(res, data, 400);
+    console.error("ERROR IN GET ALL CLIENT", e)
+  }
+}
 
 module.exports = {
   addNewClient,
-  getAllClient
+  getAllClient,
+  getClient
 }
