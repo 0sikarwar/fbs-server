@@ -16,7 +16,7 @@ async function executeQuery(sql, values) {
   const result = await new Promise((resolve, reject) => {
     mysqlPool.getConnection((err, conn) => {
       if (err) {
-        reject(queryErr);
+        reject(err);
       }
       conn.query(sql, values, (queryErr, result) => {
         if (queryErr) {

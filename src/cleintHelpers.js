@@ -15,6 +15,11 @@ const addNewClient = async (req, res) => {
       msg: result.msg || `something went wrong please try again`,
       code: result.code
     }
+    if (data.code === "ER_DUP_ENTRY") {
+      const errWords = data.msg.split(" ");
+      const entry = errWords[2].split('-');
+      data.msg = `Client altready exsits with name=${entry[0]}' location='${entry[1]}`
+    }
     sendJsonResp(res, data, 400);
   }
 }
@@ -57,8 +62,29 @@ const getClient = async (req, res) => {
   }
 }
 
+const deleteClient = async (req, res) => {
+  try{
+  const body = req.body;
+  const sql = `DELETE FROM Clients WHERE id=${body.id};`
+  let result = await executeQuery(sql);
+  if (result.affectedRows === 1) {
+    sendJsonResp(res);
+  } else {
+    sendJsonResp(res, {}, 400);
+  }
+} catch (e) {
+  const data = {
+    msg : e.sqlMessage || e.message,
+    code : e.code || "SOMETHIN WENT WRONG"
+  }
+  sendJsonResp(res, data, 400);
+  console.error("ERROR IN GET ALL CLIENT", e)
+}
+}
+
 module.exports = {
   addNewClient,
   getAllClient,
-  getClient
+  getClient,
+  deleteClient
 }
