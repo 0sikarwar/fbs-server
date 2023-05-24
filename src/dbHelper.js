@@ -13,7 +13,7 @@ const insertQuery = async (payload, table, isMulti) => {
       values = [
         payload.map((obj) => {
           const temp = [];
-          keys.forEach((key) => temp.push(obj[key]));
+          keys.forEach((key) => temp.push(obj[key] || null));
           return [...temp, date, date];
         }),
       ];
