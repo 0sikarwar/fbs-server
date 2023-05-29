@@ -91,8 +91,26 @@ const getCartData = async (req, res) => {
     if (checkTableResult.length) {
       const sql = `select * from cart_${query.cid}_${query.tid}`;
       let result = await executeQuery(sql);
+      const itemSql = `select * from items where client_id=${query.cid}`;
+      const itemResult = await executeQuery(itemSql);
+      let orderAmount = 0, totalOrderedItem = 0, totalCartItem = 0
+        cartAmount = 0;
+      result.forEach((cartObj) => {
+        const item = itemResult.find((obj) => obj.id === cartObj.item_id);
+        if (cartObj.status === "ordered") {
+          orderAmount += item[cartObj.price_type];
+          totalOrderedItem+=cartObj.item_count;
+        } else {
+          cartAmount += item[cartObj.price_type];
+          totalCartItem++;
+        }
+      });
       const data = {
         list: result,
+        orderAmount,
+        cartAmount,
+        totalOrderedItem,
+        totalCartItem
       };
       sendJsonResp(res, data, 200);
     } else {
@@ -117,24 +135,28 @@ const placeOrder = async (req, res) => {
       const conditionObj = { item_id: cart[i].item_id, price_type: cart[i].price_type, status: cart[i].status };
       promiseArr.push(updateQuery({ status: "ordered" }, `cart_${client_id}_${table_id}`, conditionObj));
     }
-    let flag= false
-    await Promise.all(promiseArr).then((values) => {
-      if (values.isError) {
-        sendJsonResp(res, values, 400);
-      }
-      const sql = `select * from cart_${client_id}_${table_id}`;
-      executeQuery(sql).then((result) => {
-        const data = {
-          list: result,
-        };
-        flag = true
-        sendJsonResp(res, data, 200);
-      }).catch((e) => {
-        throw(e)
+    let flag = false;
+    await Promise.all(promiseArr)
+      .then((values) => {
+        if (values.isError) {
+          sendJsonResp(res, values, 400);
+        }
+        const sql = `select * from cart_${client_id}_${table_id}`;
+        executeQuery(sql)
+          .then((result) => {
+            const data = {
+              list: result,
+            };
+            flag = true;
+            sendJsonResp(res, data, 200);
+          })
+          .catch((e) => {
+            throw e;
+          });
       })
-    }).catch((e) => {
-      throw(e)
-    })
+      .catch((e) => {
+        throw e;
+      });
   } catch (e) {
     const data = {
       msg: e.sqlMessage || e.message,

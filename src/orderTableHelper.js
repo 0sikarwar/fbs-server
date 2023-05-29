@@ -1,5 +1,6 @@
 const { executeQuery } = require("./dbConnection");
 const { insertQuery, updateQuery } = require("./dbHelper");
+const { sendJsonResp } = require("./utils");
 
 const getTableStatus = async (client_id, table_id) => {
   const sqlTableStatus = `select status from table_status where client_id=${client_id} and table_id=${table_id}`;
@@ -60,8 +61,6 @@ const updateCartTable = async ( cart, cartTableName) => {
     let resultCreateTable = await executeQuery(sqlCreateTable);
     if(resultCreateTable) createdTableFlag = true
   }
-  console.log('createdTableFlag', createdTableFlag)
-  console.log('checkTableResult.length', checkTableResult.length)
   if (checkTableResult.length || createdTableFlag) {
     const sqlDeleteItems = `DELETE FROM ${cartTableName} WHERE status='cart'`
     console.log('sqlDeleteItems', sqlDeleteItems)
@@ -81,4 +80,63 @@ const updateCartTable = async ( cart, cartTableName) => {
 
 }
 
-module.exports = {getTableStatus, getCartTableName, updateCartTable}
+const viewTables = async (req, res) => {
+  try {
+    const { query } = req
+    const { cid } = query;
+    const sqlTable = `select * from table_status where client_id=${cid}`;
+    let resultTable = await executeQuery(sqlTable);
+    const sqlClient = `select * from Clients where id=${cid}`;
+    let resultClient = await executeQuery(sqlClient);
+    const data = {
+      tableStatus: resultTable,
+      clientData: resultClient[0]
+    }
+    sendJsonResp(res, data, 200);
+  } catch (e) {
+    const data = {
+      msg : e.sqlMessage || e.message,
+      code : e.code || "SOMETHING WENT WRONG"
+    }
+    sendJsonResp(res, data, 400);
+    console.error("VIEW TABLE", e)
+  }
+}
+
+const confirmPayment = async (req, res) => {
+  const { client_id, table_id } = req.body;
+  try {
+    const resTableStatus = await updateQuery({ status: 'free' }, "table_status", { client_id, table_id })
+    console.log('updateTableStatus', resTableStatus)
+    if (!resTableStatus.isError) {
+      const sqlCartTable = `select * from cart_${client_id}_${table_id}`;
+      const cartResult = await executeQuery(sqlCartTable);
+      let listStr = ''
+      cartResult.forEach((cartObj) => {
+        if (cartObj.status === "ordered") {
+          if(listStr) listStr+='|'
+          listStr += `${cartObj.price_type === "full" ? 'F': 'H'}-${cartObj.item_id}`;
+        }
+      });
+      const resOrderStatus = await updateQuery({ status: "free", item_list: listStr }, "orders", { client_id, table_id, status: "busy" });
+      console.log('resOrderStatus', resOrderStatus)
+      if (!resOrderStatus.isError) {
+        const sqlTruncateTable = `TRUNCATE TABLE cart_${client_id}_${table_id}`;
+        const resutlTruncate = await executeQuery(sqlTruncateTable);
+        console.log('resutlTruncate', resutlTruncate)
+    sendJsonResp(res, {}, 200);
+        
+      }
+    }
+    
+  } catch (e) {
+    const data = {
+      msg : e.sqlMessage || e.message,
+      code : e.code || "SOMETHING WENT WRONG"
+    }
+    sendJsonResp(res, data, 400);
+    console.error("CONFIRM PAYMENT", e)
+  }
+}
+
+module.exports = {getTableStatus, getCartTableName, updateCartTable, viewTables, confirmPayment}
