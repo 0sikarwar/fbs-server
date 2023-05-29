@@ -4,7 +4,7 @@ const { sendJsonResp } = require("./utils");
 
 const addNewClient = async (req, res) => {
   const body = req.body
-  const result = await insertQuery(body, "Clients", true)
+  const result = await insertQuery(body, "Clients")
   if (!result.isError && result.affectedRows) {
     const data = {
       clientAdded: result.affectedRows
