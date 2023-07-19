@@ -67,10 +67,11 @@ const updateCartTable = async ( cart, cartTableName) => {
     let resultDeleteItem = await executeQuery(sqlDeleteItems);
     console.log('resultDeleteItem', resultDeleteItem)
     if (resultDeleteItem) {
-      const updatedCart = cart.map((obj)=>({...obj, status: "cart"}))
-      const insertResult = await insertQuery(updatedCart, cartTableName);
+      const updatedCart = cart.map((obj) => ({ ...obj, status: "cart" }))
+      let insertResult;
+      if(updatedCart.length) insertResult = await insertQuery(updatedCart, cartTableName);
       console.log('insertResult', insertResult)
-      if (!insertResult.isError && insertResult.affectedRows) { 
+      if (!updatedCart.length || (!insertResult.isError && insertResult.affectedRows)) { 
         const sqlSelect = `select * from ${cartTableName}`
         const selectResult = await executeQuery(sqlSelect);
         return selectResult;
